@@ -12,12 +12,17 @@ class App extends Component{
       currentNodeId : 0,
       currentNode : {},
       childNodes : [],
-      parentNode : -1
+      parentNode : -1,
+      addNodeOn: false
     }
   }
   openNode = id => {
-    if(id<0)
+    if(id<0){
+      this.setState({
+        addNodeOn:false
+      });
       return;
+    }
     var children = this.state.allNodes[id].relations[0].children;  
     var childNodes = children.map((id)=> {
               return {
@@ -29,7 +34,8 @@ class App extends Component{
         currentNodeId: id,
         parentNode: this.state.allNodes[id].parent,
         currentNode: this.state.allNodes[id],
-        childNodes : childNodes
+        childNodes : childNodes,
+        addNodeOn: false
     });
   }
 
@@ -45,6 +51,7 @@ class App extends Component{
     nodes[node.parent].relations[0].children.push(node.id);
     this.setState({
       allNodes: nodes,
+      addNodeOn: !this.state.addNodeOn
     });
     this.openNode(this.state.currentNodeId);
     console.log(nodes);
@@ -75,21 +82,27 @@ class App extends Component{
         }
       );
   }
-
+  getAddNodeComponent(){
+    if(this.state.addNodeOn)
+    return <AddNewNode handleAddNodeSubmit = {this.handleAddNodeSubmit}/>;
+  }
+  toggleAddNodeOn=()=>{
+    this.setState({
+      addNodeOn: !this.state.addNodeOn
+    });
+  }
   render(){
     var {currentNode,isLoaded} = this.state;
     if(isLoaded){
       return (
-       <Router>
         <div className="App" style = {{margin:'5%'}}>
           <button className="btn btn-primary m-2" onClick = {this.openParentNode}>{"<< parent "}</button>
           <div>
             <Node node = {currentNode} childNodes = {this.state.childNodes} openNode = {this.openNode} addNewNode = {this.addNewNode}/>
           </div>
-          <Route path = '/' exact component = {() => <Link to={'/addnode'} ><button className="btn btn-primary m-2">Add New Node</button></Link>} />
-          <Route  path = '/addnode' component= {() => <AddNewNode handleAddNodeSubmit = {this.handleAddNodeSubmit}/>}/>
+          <button className="btn btn-primary m-2" onClick = {this.toggleAddNodeOn}>Add New Node</button>
+          {this.getAddNodeComponent()}
         </div>
-       </Router>
       );
     }
     else{

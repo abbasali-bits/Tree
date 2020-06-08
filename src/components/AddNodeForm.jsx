@@ -33,9 +33,9 @@ class AddNewNode extends Component{
 					 	<textarea type="text" value = {this.state.body} onChange = {this.handleBodyChange}/>
 					</div>
 				</form>
-					<Link to={'/'}> 
+					 
 						<button onClick = {() => this.props.handleAddNodeSubmit(this.state)}>submit </button> 
-					</Link>
+			
 
 				</div>
 			);
