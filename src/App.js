@@ -1,7 +1,10 @@
 import React, {Component} from 'react';
 import Node from './components/node';
 import AddNewNode from './components/AddNodeForm';
-import {BrowserRouter as Router,Route,Link} from 'react-router-dom';
+import GoogleBtn from './components/googleBtn'
+import {GoogleLogin,GoogleLogout} from 'react-google-login';
+import {useSelector} from 'react-redux';
+import {store,persistor} from './store'
 class App extends Component{
 
   constructor(props){
@@ -13,9 +16,18 @@ class App extends Component{
       currentNode : {},
       childNodes : [],
       parentNode : -1,
-      addNodeOn: false
+      addNodeOn: false,
+      isLoggedIn: store.getState().isLogged.isLoggedIn,
+      store: store
     }
   }
+
+  fun = store.subscribe(()=>{
+    console.log("subscribing");
+    this.setState({
+      isLoggedIn: store.getState().isLogged.isLoggedIn
+    });
+  });
   openNode = id => {
     if(id<0){
       this.setState({
@@ -57,7 +69,6 @@ class App extends Component{
     console.log(nodes);
   }
   componentDidMount(){
-
     var uri = 'https://api.npoint.io/1800ee5d52be1bdea4d6/' ;
     
    
@@ -91,17 +102,51 @@ class App extends Component{
       addNodeOn: !this.state.addNodeOn
     });
   }
+  getLoginButton = () =>{
+    const responseGoogle = (response) => {
+      var {googleId} = {response};
+      this.setState({
+        isLoggedIn:true
+      });
+      console.log(response.getBasicProfile().getEmail());
+    }
+    const logout = (response) => {
+      console.log(response);
+    }
+    if(this.state.isLoggedIn === false){
+      return (<GoogleLogin
+          clientId="1084512785168-9no6rgfvkralio08vd4k36fvc5c0gnsp.apps.googleusercontent.com"
+          buttonText="Login"
+          onSuccess={responseGoogle}
+          onFailure={responseGoogle}
+          cookiePolicy={'single_host_origin'}
+        />);
+    }
+    else{
+      return (<GoogleLogout
+          clientId="658977310896-knrl3gka66fldh83dao2rhgbblmd4un9.apps.googleusercontent.com"
+          buttonText="Logout"
+          onLogoutSuccess={logout}
+        >
+        </GoogleLogout>);
+    }
+  }
   render(){
-    var {currentNode,isLoaded} = this.state;
+    var {currentNode,isLoaded,isLoggedIn} = this.state;
+    console.log(isLoggedIn);
+    console.log(this.state.store.getState())
     if(isLoaded){
       return (
         <div className="App" style = {{margin:'5%'}}>
-          <button className="btn btn-primary m-2" onClick = {this.openParentNode}>{"<< parent "}</button>
-          <div>
-            <Node node = {currentNode} childNodes = {this.state.childNodes} openNode = {this.openNode} addNewNode = {this.addNewNode}/>
-          </div>
-          <button className="btn btn-primary m-2" onClick = {this.toggleAddNodeOn}>Add New Node</button>
-          {this.getAddNodeComponent()}
+          <GoogleBtn store = {this.state.store} />
+          {isLoggedIn && (<div>
+            <button className="btn btn-primary m-2" onClick = {this.openParentNode}>{"<< parent "}</button>
+            <div>
+              <Node node = {currentNode} childNodes = {this.state.childNodes} openNode = {this.openNode} addNewNode = {this.addNewNode}/>
+            </div>
+            <button className="btn btn-primary m-2" onClick = {this.toggleAddNodeOn}>Add New Node</button>
+            {this.getAddNodeComponent()}
+          </div>)}
         </div>
       );
     }
