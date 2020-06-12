@@ -6,7 +6,7 @@ import {useDispatch} from 'react-redux';
 import {login} from '../actions'
 import {store,persistor} from '../store'
 const CLIENT_ID = '1084512785168-9no6rgfvkralio08vd4k36fvc5c0gnsp.apps.googleusercontent.com';
-
+                   
 
 class GoogleBtn extends Component {
   constructor(props) {
@@ -14,17 +14,12 @@ class GoogleBtn extends Component {
 
     this.state = {
       isLogined: store.getState().isLogged.isLoggedIn,
-      accessToken: store.getState().isLogged.name,
-      store : store
+      accessToken: store.getState().isLogged.name
     };
     console.log(store.getState());
-    this.login = this.login.bind(this);
-    this.handleLoginFailure = this.handleLoginFailure.bind(this);
-    this.logout = this.logout.bind(this);
-    this.handleLogoutFailure = this.handleLogoutFailure.bind(this);
   }
 
-  login (response) {
+  login = (response) => {
     console.log(response);
     console.log(response.accessToken);
     if(response){
@@ -33,7 +28,7 @@ class GoogleBtn extends Component {
         accessToken: response.profileObj.name
       }));
     }
-    console.log(this.state.store);
+    console.log(store);
     store.dispatch({
         type: 'SIGN_IN',
         payload: {
@@ -43,12 +38,12 @@ class GoogleBtn extends Component {
       });
   }
 
-  logout (response) {
+  logout = (response) => {
     this.setState(state => ({
       isLogined: false,
       accessToken: ''
     }));
-    this.state.store.dispatch({
+    store.dispatch({
         type: 'SIGN_OUT',
         payload: {
           emailId: 'gmail3'
@@ -56,12 +51,12 @@ class GoogleBtn extends Component {
       });
   }
 
-  handleLoginFailure (response) {
+  handleLoginFailure = (response) => {
     console.log(response);
     alert('Failed to log in')
   }
 
-  handleLogoutFailure (response) {
+  handleLogoutFailure = (response) =>{
     alert('Failed to log out')
   }
 
