@@ -12,6 +12,5 @@ app.get('*', (req, res) => {
 const server = createServer(app);
 server.listen(port, () => {
    console.log('Server is up!');
-   console.log();
 });
 
