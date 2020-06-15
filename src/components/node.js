@@ -46,7 +46,7 @@ class Node extends Component{
 					<div>
 						<Children openNode = {openNode}/>
 					</div>
-					<button onClick = {this.state.delete}>DeleteNodeWithChildren</button>
+					<button className="btn btn-primary m-2" onClick = {this.state.delete}>DeleteNode</button>
 				</div>
 			);
 	}

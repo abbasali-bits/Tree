@@ -170,6 +170,8 @@ class App extends Component{
       const node = store.getState().nodes.nodes[index];
       if(node==null)
         return null;
+      if(node.parent === -1)
+        return null;
     store.dispatch(updateCurrentNodeIndex(node.parent));
     }
   render(){
@@ -180,8 +182,6 @@ class App extends Component{
         <div className="App" style = {{margin:'5%'}}>
           <GoogleBtn  />
           {this.getNodeComponent()}
-          <h3>{store.getState().isLogged.isLoggedIn ? "true": "false"}</h3>
-          <button onClick = {this.loadData}>Load</button>
         </div>
       );
     }
