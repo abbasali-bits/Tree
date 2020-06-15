@@ -1,20 +1,52 @@
 import React, {Component} from 'react';
 import {Description} from './description';
 import {Children} from './children';
-
+import {store} from '../store'
 class Node extends Component{
 
+	constructor(props){
+    	super(props);
+	    this.state = {
+	      title: this.getTitle(),
+	      delete: props.delete
+	    }
+  	}
+  	fun = store.subscribe(()=>{
+	    this.setState({
+	     	title: this.getTitle()
+	   	});
+	});
+	getIndex = (id,allNodes)=>{
+	    var i;
+	    if(allNodes == null)
+	    	return -1;
+	    for(i=0;i<allNodes.length;i++){
+	      if(allNodes[i].id == id)
+	        return i;
+	    }
+	    return -1;
+	}
+  	getTitle = () => {
+  		const index = this.getIndex(store.getState().currentNode.index,store.getState().nodes.nodes);
+  		if(index === -1)
+  			return null;
+	    const node = store.getState().nodes.nodes[index];
+	    if(node==null)
+	    	return null;
+	    return node.title;
+  	}
 	render(){
-		const {title,body} = this.props.node;
-		const {childNodes,openNode} = this.props;
+		const {title} = this.state;
+		const {openNode} = this.props;
 		return (
 				<div>
 
-					<h1>{title}</h1>
-					<Description list = {body.description}/>
+					<h1>{this.state.title}</h1>
+					<Description />
 					<div>
-						<Children listOfNodes = {childNodes} openNode = {openNode}/>
+						<Children openNode = {openNode}/>
 					</div>
+					<button onClick = {this.state.delete}>DeleteNodeWithChildren</button>
 				</div>
 			);
 	}

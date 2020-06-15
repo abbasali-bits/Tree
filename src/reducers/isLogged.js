@@ -4,14 +4,16 @@ const loggedReducer = (state = {isLoggedIn: false}, action) => {
 			return {
 				emailId: action.payload.emailId,
 				name : action.payload.name,
+				tokenId: action.payload.tokenId,
 				isLoggedIn: true
 			};
 		case 'SIGN_OUT':
 			return {
 				emailId: action.payload.emailId,
+				name : action.payload.name,
+				tokenId: '',
 				isLoggedIn: false
 			};
-		
 		default :
 			return state;
 	}

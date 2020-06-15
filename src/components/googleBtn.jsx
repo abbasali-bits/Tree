@@ -3,10 +3,10 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom';
 import { GoogleLogin, GoogleLogout } from 'react-google-login';
 import {useDispatch} from 'react-redux';
-import {login} from '../actions'
+import {login,logoutAction} from '../actions'
 import {store,persistor} from '../store'
+          
 const CLIENT_ID = '1084512785168-9no6rgfvkralio08vd4k36fvc5c0gnsp.apps.googleusercontent.com';
-                   
 
 class GoogleBtn extends Component {
   constructor(props) {
@@ -16,26 +16,18 @@ class GoogleBtn extends Component {
       isLogined: store.getState().isLogged.isLoggedIn,
       accessToken: store.getState().isLogged.name
     };
-    console.log(store.getState());
   }
 
-  login = (response) => {
-    console.log(response);
-    console.log(response.accessToken);
+  loginfun = (response) => {
+
     if(response){
       this.setState(state => ({
         isLogined: true,
         accessToken: response.profileObj.name
       }));
     }
-    console.log(store);
-    store.dispatch({
-        type: 'SIGN_IN',
-        payload: {
-          emailId: 'gmail2',
-          name : response.profileObj.name,
-        }
-      });
+    
+    store.dispatch(login(response.profileObj.email,response.profileObj.name,response.tokenId));
   }
 
   logout = (response) => {
@@ -43,16 +35,17 @@ class GoogleBtn extends Component {
       isLogined: false,
       accessToken: ''
     }));
+    store.dispatch(logoutAction(store.getState().isLogged.emailId,store.getState().isLogged.name));
     store.dispatch({
-        type: 'SIGN_OUT',
-        payload: {
-          emailId: 'gmail3'
-        }
-      });
+              type: 'SAVE',
+              payload: {
+                nodes : [],
+                isLoaded: false
+              }
+            });
   }
 
   handleLoginFailure = (response) => {
-    console.log(response);
     alert('Failed to log in')
   }
 
@@ -74,7 +67,7 @@ class GoogleBtn extends Component {
         <GoogleLogin
           clientId={CLIENT_ID}
           buttonText='Login'
-          onSuccess={ this.login }
+          onSuccess={ this.loginfun }
           onFailure={ this.handleLoginFailure }
           cookiePolicy={ 'single_host_origin' }
           responseType='code,token'

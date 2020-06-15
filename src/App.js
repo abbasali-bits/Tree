@@ -4,95 +4,101 @@ import AddNewNode from './components/AddNodeForm';
 import GoogleBtn from './components/googleBtn'
 import {GoogleLogin,GoogleLogout} from 'react-google-login';
 import {useSelector} from 'react-redux';
-import {store,persistor} from './store'
+import {store} from './store'
+import {updateCurrentNodeIndex} from './actions'
 class App extends Component{
 
   constructor(props){
     super(props);
     this.state = {
-      isLoaded : false,
-      allNodes: [],
-      currentNodeId : 0,
-      currentNode : {},
-      childNodes : [],
-      parentNode : -1,
+      isLoaded : true,
       addNodeOn: false,
       isLoggedIn: store.getState().isLogged.isLoggedIn,
-      store: store
     }
   }
 
   fun = store.subscribe(()=>{
-    console.log("subscribing");
     this.setState({
-      isLoggedIn: store.getState().isLogged.isLoggedIn
+      isLoggedIn: store.getState().isLogged.isLoggedIn,
+      isLoaded: store.getState().nodes.isLoaded
     });
   });
+  getIndex = (id,allNodes)=>{
+    var i;
+    if(allNodes==null)
+      return -1;
+    for(i=0;i<allNodes.length;i++){
+      if(allNodes[i].id === id)
+        return i;
+    }
+    return -1;
+  }
   openNode = id => {
-    if(id<0){
+  
+    const index = this.getIndex(id,store.getState().nodes.nodes);
+    if(index<0){
       this.setState({
         addNodeOn:false
       });
       return;
     }
-    var children = this.state.allNodes[id].relations[0].children;  
-    var childNodes = children.map((id)=> {
-              return {
-                      "id" : id,
-                      "title": this.state.allNodes[id].title
-                    }
-                  });
-    this.setState({
-        currentNodeId: id,
-        parentNode: this.state.allNodes[id].parent,
-        currentNode: this.state.allNodes[id],
-        childNodes : childNodes,
-        addNodeOn: false
-    });
+    store.dispatch(updateCurrentNodeIndex(id));
   }
 
   openParentNode = () => {
-    this.openNode(this.state.parentNode);
+    var id = store.getState().currentNode.index;
+    var parentId = store.getState().nodes.nodes[this.getIndex(id,store.getState().nodes.nodes)].parent;
+    this.openNode(parentId);
   }
   handleAddNodeSubmit = state => {
-    var node = {
-      "id":this.state.allNodes.length,
-      "body":{"description":[{"text":state.title,"type":"T"},{"text":state.body,"type":"P"}]},"title":state.title,"parent":this.state.currentNodeId,"relations":[{"children":[]}]};
-    var nodes = this.state.allNodes;
-    nodes.push(node);
-    nodes[node.parent].relations[0].children.push(node.id);
     this.setState({
-      allNodes: nodes,
-      addNodeOn: !this.state.addNodeOn
+      addNodeOn: false
     });
-    this.openNode(this.state.currentNodeId);
-    console.log(nodes);
-  }
-  componentDidMount(){
-    var uri = 'https://api.npoint.io/1800ee5d52be1bdea4d6/' ;
+    var node = {
+      "emailId": store.getState().isLogged.emailId,
+      "body":[{"text":state.title,"type":"T"},{"text":state.body,"type":"P"}],
+      "title":state.title,
+      "parent":store.getState().currentNode.index
+    };
+    const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                    'token_id': store.getState().isLogged.tokenId },
+        body: JSON.stringify(node)
+    };
+    fetch('http://heroku-root.herokuapp.com/node/save', requestOptions)
+        .then(response => response.json())
+        .then(data => {console.log(data);this.loadData();});
+    const id = store.getState().currentNode.index;
     
-   
-    fetch(uri)
-      .then(res => res.json())
-      .then(json => {
-          var children = json[this.state.currentNodeId].relations[0].children;  
-          var childNodes = children.map((id)=> {
-              return {
-                      "id" : id,
-                      "title": json[id].title
-                    }
-          });
-
-          this.setState({
-              isLoaded: true,
-              allNodes: json,
-              currentNode : json[this.state.currentNodeId],
-              childNodes: childNodes
-            }
-          );
-        }
-      );
+    console.log("HandelSubmit");
+    console.log(id);
+    this.openNode(id);
   }
+  // componentDidMount(){
+  //   console.log("componentDidMount called");
+  //   var uri = 'https://api.npoint.io/1800ee5d52be1bdea4d6/' ;
+  //   fetch(uri)
+  //     .then(res => res.json())
+  //     .then(json => {
+  //         var children = json[this.state.currentNodeId].relations[0].children;  
+  //         var childNodes = children.map((id)=> {
+  //             return {
+  //                     "id" : id,
+  //                     "title": json[id].title
+  //                   }
+  //         });
+
+  //         this.setState({
+  //             isLoaded: true,
+  //             allNodes: json,
+  //             currentNode : json[this.state.currentNodeId],
+  //             childNodes: childNodes
+  //           }
+  //         );
+  //       }
+  //     );
+  // }
   getAddNodeComponent(){
     if(this.state.addNodeOn)
     return <AddNewNode handleAddNodeSubmit = {this.handleAddNodeSubmit}/>;
@@ -102,63 +108,83 @@ class App extends Component{
       addNodeOn: !this.state.addNodeOn
     });
   }
-  getLoginButton = () =>{
-    const responseGoogle = (response) => {
-      var {googleId} = {response};
-      this.setState({
-        isLoggedIn:true
-      });
-      console.log(response.getBasicProfile().getEmail());
-    }
-    const logout = (response) => {
-      console.log(response);
-    }
-    if(this.state.isLoggedIn === false){
-      return (<GoogleLogin
-          clientId="1084512785168-9no6rgfvkralio08vd4k36fvc5c0gnsp.apps.googleusercontent.com"
-          buttonText="Login"
-          onSuccess={responseGoogle}
-          onFailure={responseGoogle}
-          cookiePolicy={'single_host_origin'}
-        />);
+  loadData = () =>{
+    console.log("lodingData");
+    var uri =  "http://heroku-root.herokuapp.com/nodes";
+    const requestOptions = {
+        crossDomain:true,
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json',
+                    'token_id': store.getState().isLogged.tokenId}
+    };
+    fetch(uri, requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            const wasLoaded = this.state.isLoaded;
+            store.dispatch({
+              type: 'SAVE',
+              payload: {
+                nodes : data.nodes,
+                isLoaded: true
+              }
+            });
+            console.log("LoadedData");
+            console.log(data);
+            if(!wasLoaded)
+              store.dispatch(updateCurrentNodeIndex(data.root));
+        });
+
+  }
+  getNodeComponent = () => {
+    var {isLoaded , isLoggedIn} = this.state ;
+    if(isLoggedIn){
+      if(!isLoaded){
+        this.loadData();
+      }
+      return (<div>
+                    <button className="btn btn-primary m-2" onClick = {this.openParentNode}>{"<< parent "}</button>
+                    <div>
+                      <Node openNode = {this.openNode} delete = {this.delete}/>
+                    </div>
+                    <button className="btn btn-primary m-2" onClick = {this.toggleAddNodeOn}>Add New Node</button>
+                    {this.getAddNodeComponent()}
+                  </div>
+                )
     }
     else{
-      return (<GoogleLogout
-          clientId="658977310896-knrl3gka66fldh83dao2rhgbblmd4un9.apps.googleusercontent.com"
-          buttonText="Logout"
-          onLogoutSuccess={logout}
-        >
-        </GoogleLogout>);
+        return <h3>Not Logged In</h3>;
     }
   }
+  delete = () => {
+    const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                    'token_id': store.getState().isLogged.tokenId },
+        body: JSON.stringify({"id" : store.getState().currentNode.index, "emailId": store.getState().isLogged.emailId})
+    };
+    fetch('http://heroku-root.herokuapp.com/node/delete', requestOptions)
+        .then(response => {console.log(response);this.loadData();});
+    const index = this.getIndex(store.getState().currentNode.index,store.getState().nodes.nodes);
+      if(index === -1)
+        return null;
+      const node = store.getState().nodes.nodes[index];
+      if(node==null)
+        return null;
+    store.dispatch(updateCurrentNodeIndex(node.parent));
+    }
   render(){
-    var {currentNode,isLoaded,isLoggedIn} = this.state;
-    console.log(isLoggedIn);
-    console.log(this.state.store.getState())
-    if(isLoaded){
+    console.log(this.state);
+    var {isLoaded,isLoggedIn} = this.state;
+    console.log(store.getState());
       return (
         <div className="App" style = {{margin:'5%'}}>
-          <GoogleBtn store = {this.state.store} />
-          {isLoggedIn && (<div>
-            <button className="btn btn-primary m-2" onClick = {this.openParentNode}>{"<< parent "}</button>
-            <div>
-              <Node node = {currentNode} childNodes = {this.state.childNodes} openNode = {this.openNode} addNewNode = {this.addNewNode}/>
-            </div>
-            <button className="btn btn-primary m-2" onClick = {this.toggleAddNodeOn}>Add New Node</button>
-            {this.getAddNodeComponent()}
-          </div>)}
+          <GoogleBtn  />
+          {this.getNodeComponent()}
+          <h3>{store.getState().isLogged.isLoggedIn ? "true": "false"}</h3>
+          <button onClick = {this.loadData}>Load</button>
         </div>
       );
     }
-    else{
-      return (
-      <div className="App">
-        <h1> Loading...</h1>
-      </div>
-      );
-    }
-    
-  }
 }
 
 export default App;
